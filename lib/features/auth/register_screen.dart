@@ -16,7 +16,9 @@ class _RegisterScreenState extends State<RegisterScreen>
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final _securityAnswerController = TextEditingController();
 
+  String? _selectedQuestion;
   bool _obscurePassword = true;
   bool _obscureConfirm = true;
   bool _isLoading = false;
@@ -30,6 +32,7 @@ class _RegisterScreenState extends State<RegisterScreen>
   static const Color _purple = Color(0xFF5D56E8);
   static const Color _yellow = Color(0xFFFFC107);
   static const Color _white = Colors.white;
+  static const Color _green = Color(0xFF3DBE7A);
 
   @override
   void initState() {
@@ -38,9 +41,11 @@ class _RegisterScreenState extends State<RegisterScreen>
       vsync: this,
       duration: const Duration(milliseconds: 700),
     );
-    _fadeAnim = CurvedAnimation(parent: _animController, curve: Curves.easeOut);
+    _fadeAnim =
+        CurvedAnimation(parent: _animController, curve: Curves.easeOut);
     _slideAnim = Tween<Offset>(begin: const Offset(0, 0.08), end: Offset.zero)
-        .animate(CurvedAnimation(parent: _animController, curve: Curves.easeOutCubic));
+        .animate(CurvedAnimation(
+            parent: _animController, curve: Curves.easeOutCubic));
     _animController.forward();
   }
 
@@ -51,17 +56,28 @@ class _RegisterScreenState extends State<RegisterScreen>
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _securityAnswerController.dispose();
     super.dispose();
   }
 
   Future<void> _handleRegister() async {
     if (!_formKey.currentState!.validate()) return;
-    setState(() { _isLoading = true; _errorMessage = null; });
+    if (_selectedQuestion == null) {
+      setState(() => _errorMessage = 'Please select a security question.');
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
 
     final result = await AuthService.register(
       name: _nameController.text.trim(),
       email: _emailController.text.trim(),
       password: _passwordController.text,
+      securityQuestion: _selectedQuestion!,
+      securityAnswer: _securityAnswerController.text.trim(),
     );
 
     setState(() => _isLoading = false);
@@ -69,10 +85,12 @@ class _RegisterScreenState extends State<RegisterScreen>
 
     switch (result) {
       case AuthResult.success:
-        Navigator.pushReplacementNamed(context, AppConstants.avatarSelectionRoute);
+        Navigator.pushReplacementNamed(
+            context, AppConstants.avatarSelectionRoute);
         break;
       case AuthResult.emailAlreadyExists:
-        setState(() => _errorMessage = 'An account with this email already exists.');
+        setState(() =>
+            _errorMessage = 'An account with this email already exists.');
         break;
       default:
         setState(() => _errorMessage = 'Something went wrong. Try again.');
@@ -107,6 +125,8 @@ class _RegisterScreenState extends State<RegisterScreen>
                     _buildPasswordField(),
                     const SizedBox(height: 14),
                     _buildConfirmPasswordField(),
+                    const SizedBox(height: 20),
+                    _buildSecuritySection(),
                     const SizedBox(height: 28),
                     _buildRegisterButton(),
                     const SizedBox(height: 32),
@@ -139,12 +159,7 @@ class _RegisterScreenState extends State<RegisterScreen>
           ),
         ],
       ),
-      child: const Center(
-        child: Text(
-          '🏃',
-          style: TextStyle(fontSize: 52),
-        ),
-      ),
+      child: const Center(child: Text('🏃', style: TextStyle(fontSize: 52))),
     );
   }
 
@@ -156,10 +171,9 @@ class _RegisterScreenState extends State<RegisterScreen>
         RichText(
           text: const TextSpan(
             style: TextStyle(
-              fontSize: 30,
-              fontWeight: FontWeight.w800,
-              letterSpacing: -0.5,
-            ),
+                fontSize: 30,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.5),
             children: [
               TextSpan(text: 'GrowStep ', style: TextStyle(color: _white)),
               TextSpan(text: 'AR', style: TextStyle(color: _yellow)),
@@ -216,7 +230,8 @@ class _RegisterScreenState extends State<RegisterScreen>
       prefixIcon: Icon(icon, color: _white.withOpacity(0.7), size: 20),
       filled: true,
       fillColor: _white.withOpacity(0.18),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
+      contentPadding:
+          const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
         borderSide: BorderSide.none,
@@ -264,7 +279,8 @@ class _RegisterScreenState extends State<RegisterScreen>
       keyboardType: TextInputType.emailAddress,
       style: const TextStyle(color: _white, fontSize: 15),
       cursorColor: _yellow,
-      decoration: _fieldDecoration('Email Address', Icons.mail_outline_rounded),
+      decoration:
+          _fieldDecoration('Email Address', Icons.mail_outline_rounded),
       validator: (val) {
         if (val == null || val.isEmpty) return 'Email is required';
         if (!val.contains('@')) return 'Enter a valid email';
@@ -279,14 +295,18 @@ class _RegisterScreenState extends State<RegisterScreen>
       obscureText: _obscurePassword,
       style: const TextStyle(color: _white, fontSize: 15),
       cursorColor: _yellow,
-      decoration: _fieldDecoration('Password', Icons.lock_outline_rounded).copyWith(
+      decoration:
+          _fieldDecoration('Password', Icons.lock_outline_rounded).copyWith(
         suffixIcon: IconButton(
           icon: Icon(
-            _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+            _obscurePassword
+                ? Icons.visibility_off_outlined
+                : Icons.visibility_outlined,
             color: _white.withOpacity(0.7),
             size: 20,
           ),
-          onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+          onPressed: () =>
+              setState(() => _obscurePassword = !_obscurePassword),
         ),
       ),
       validator: (val) {
@@ -303,14 +323,19 @@ class _RegisterScreenState extends State<RegisterScreen>
       obscureText: _obscureConfirm,
       style: const TextStyle(color: _white, fontSize: 15),
       cursorColor: _yellow,
-      decoration: _fieldDecoration('Confirm Password', Icons.lock_outline_rounded).copyWith(
+      decoration:
+          _fieldDecoration('Confirm Password', Icons.lock_outline_rounded)
+              .copyWith(
         suffixIcon: IconButton(
           icon: Icon(
-            _obscureConfirm ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+            _obscureConfirm
+                ? Icons.visibility_off_outlined
+                : Icons.visibility_outlined,
             color: _white.withOpacity(0.7),
             size: 20,
           ),
-          onPressed: () => setState(() => _obscureConfirm = !_obscureConfirm),
+          onPressed: () =>
+              setState(() => _obscureConfirm = !_obscureConfirm),
         ),
       ),
       validator: (val) {
@@ -318,6 +343,101 @@ class _RegisterScreenState extends State<RegisterScreen>
         if (val != _passwordController.text) return 'Passwords do not match';
         return null;
       },
+    );
+  }
+
+  // ─── Security question section ─────────────────────────────
+
+  Widget _buildSecuritySection() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _white.withOpacity(0.1)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.shield_rounded, color: _green, size: 16),
+              const SizedBox(width: 7),
+              Text(
+                'SECURITY QUESTION',
+                style: TextStyle(
+                  color: _green,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.5,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Used to reset your password if you forget it.',
+            style: TextStyle(
+              color: _white.withOpacity(0.55),
+              fontSize: 11,
+            ),
+          ),
+          const SizedBox(height: 14),
+
+          // Dropdown
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+            decoration: BoxDecoration(
+              color: _white.withOpacity(0.18),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: _white.withOpacity(0.12)),
+            ),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value: _selectedQuestion,
+                hint: Text(
+                  'Choose a question…',
+                  style: TextStyle(
+                      color: _white.withOpacity(0.7), fontSize: 14),
+                ),
+                isExpanded: true,
+                dropdownColor: const Color(0xFF5D56E8),
+                iconEnabledColor: _white.withOpacity(0.7),
+                items: AppConstants.securityQuestions
+                    .map((q) => DropdownMenuItem(
+                          value: q,
+                          child: Text(
+                            q,
+                            style: const TextStyle(
+                                color: _white, fontSize: 13),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ))
+                    .toList(),
+                onChanged: (val) =>
+                    setState(() => _selectedQuestion = val),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // Answer field
+          TextFormField(
+            controller: _securityAnswerController,
+            style: const TextStyle(color: _white, fontSize: 15),
+            cursorColor: _yellow,
+            decoration: _fieldDecoration(
+                'Your Answer', Icons.question_answer_outlined),
+            validator: (val) {
+              if (_selectedQuestion == null) return null;
+              if (val == null || val.trim().isEmpty)
+                return 'Answer is required';
+              return null;
+            },
+          ),
+        ],
+      ),
     );
   }
 
@@ -333,7 +453,8 @@ class _RegisterScreenState extends State<RegisterScreen>
           backgroundColor: _yellow,
           foregroundColor: const Color(0xFF1A1400),
           disabledBackgroundColor: _yellow.withOpacity(0.6),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
           elevation: 0,
         ),
         child: _isLoading
@@ -344,7 +465,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                     color: Color(0xFF1A1400), strokeWidth: 2.5),
               )
             : const Text(
-                "Start Playing  →",
+                'Start Playing  →',
                 style: TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.w800,
@@ -363,13 +484,11 @@ class _RegisterScreenState extends State<RegisterScreen>
       children: [
         Text(
           'Already have an account?  ',
-          style: TextStyle(
-            color: _white.withOpacity(0.7),
-            fontSize: 14,
-          ),
+          style: TextStyle(color: _white.withOpacity(0.7), fontSize: 14),
         ),
         GestureDetector(
-          onTap: () => Navigator.pushReplacementNamed(context, AppConstants.loginRoute),
+          onTap: () => Navigator.pushReplacementNamed(
+              context, AppConstants.loginRoute),
           child: const Text(
             'Log In',
             style: TextStyle(
