@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../../models/shop_item_model.dart';
 import '../../models/user_model.dart';
 import '../../services/auth_service.dart';
-import '../../services/storage_service.dart';
 
 class ShopScreen extends StatefulWidget {
   const ShopScreen({super.key});
@@ -55,13 +54,7 @@ class _ShopScreenState extends State<ShopScreen>
       purchasedItemIds: updatedIds,
     );
 
-    await StorageService.saveUser(updated);
-    final users = StorageService.getRegisteredUsers();
-    final idx = users.indexWhere((u) => u.id == updated.id);
-    if (idx != -1) {
-      users[idx] = updated;
-      await StorageService.saveRegisteredUsers(users);
-    }
+    await AuthService.saveUser(updated);
 
     setState(() => _user = updated);
     _snack('${item.name} added to your avatar!', isError: false);
