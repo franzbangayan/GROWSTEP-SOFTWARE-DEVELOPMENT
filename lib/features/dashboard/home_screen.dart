@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_constants.dart';
 import '../../models/quiz_question_model.dart';
-import '../../models/user_model.dart';
 import '../../services/auth_service.dart';
-import '../../services/storage_service.dart';
 import '../lessons/lessons_screen.dart';
 import '../profile/profile_screen.dart';
 import '../quiz/quiz_screen.dart';
@@ -147,17 +145,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       totalMeters: _totalMeters,
       completedQuizCount: _completedQuizCount,
     );
-    await StorageService.saveUser(updated);
-    await _syncRegistered(updated);
-  }
-
-  Future<void> _syncRegistered(UserModel user) async {
-    final all = StorageService.getRegisteredUsers();
-    final idx = all.indexWhere((u) => u.id == user.id);
-    if (idx != -1) {
-      all[idx] = user;
-      await StorageService.saveRegisteredUsers(all);
-    }
+    await AuthService.saveUser(updated);
   }
 
   // ─── Walk tap logic ───────────────────────────────────────
@@ -209,7 +197,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   // ─── Quiz launch ──────────────────────────────────────────
 
- Future<void> _initCamera() async {
+  Future<void> _initCamera() async {
     final cameras = await availableCameras();
     _cameraController = CameraController(
       cameras.first,       // back camera
@@ -237,24 +225,24 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     },
     onError: (error) => debugPrint('Pedometer error: $error'),
   );
-}
+  }
 
-Future<void> _onStepDetected(int addedMeters) async {
-  if (_quizInProgress) return;
-  final prevMeters = _totalMeters;
-  final newMeters = _totalMeters + addedMeters;
-  final prevCoin = prevMeters ~/ AppConstants.metersPerCoin;
-  final newCoin = newMeters ~/ AppConstants.metersPerCoin;
-  if (newCoin > prevCoin) _coinController.forward(from: 0);
-  setState(() {
-    _totalMeters = newMeters;
-    _coins += (newCoin - prevCoin);
-  });
-  await _persistUser();
-  final prevMilestone = prevMeters ~/ AppConstants.quizTriggerMeters;
-  final newMilestone = newMeters ~/ AppConstants.quizTriggerMeters;
-  if (newMilestone > prevMilestone) _triggerMilestone(newMeters);
-}
+  Future<void> _onStepDetected(int addedMeters) async {
+    if (_quizInProgress) return;
+    final prevMeters = _totalMeters;
+    final newMeters = _totalMeters + addedMeters;
+    final prevCoin = prevMeters ~/ AppConstants.metersPerCoin;
+    final newCoin = newMeters ~/ AppConstants.metersPerCoin;
+    if (newCoin > prevCoin) _coinController.forward(from: 0);
+    setState(() {
+      _totalMeters = newMeters;
+      _coins += (newCoin - prevCoin);
+    });
+    await _persistUser();
+    final prevMilestone = prevMeters ~/ AppConstants.quizTriggerMeters;
+    final newMilestone = newMeters ~/ AppConstants.quizTriggerMeters;
+    if (newMilestone > prevMilestone) _triggerMilestone(newMeters);
+  }
   Future<void> _launchQuiz() async {
     if (_quizInProgress || !mounted) return;
     setState(() {
@@ -379,23 +367,6 @@ Future<void> _onStepDetected(int addedMeters) async {
 
   // ─── Background ───────────────────────────────────────────
   // Outdoor nature theme — replace with Image.asset / CameraPreview later
-
-  Widget _buildBackground() {
-  return Container(
-    decoration: BoxDecoration(
-      gradient: LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: [
-          Colors.black.withOpacity(0.28),
-          Colors.transparent,
-          Colors.black.withOpacity(0.20),
-        ],
-        stops: const [0.0, 0.45, 1.0],
-      ),
-    ),
-  );
-}
   // ─── Status Bar ───────────────────────────────────────────
 
   Widget _buildStatusBar() {
