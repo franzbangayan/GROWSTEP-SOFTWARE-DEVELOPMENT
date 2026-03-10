@@ -1,27 +1,33 @@
-name: my_game
-description: A gamified fitness and learning app.
+name: growstep
+description: GrowStep AR — Walk, learn Flutter, earn coins.
+
 publish_to: 'none'
+
 version: 1.0.0+1
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
 
 dependencies:
-  camera: ^0.12.0
   flutter:
     sdk: flutter
-  pedometer: ^4.0.0
-  permission_handler: ^11.0.0
-  shared_preferences: ^2.2.2
 
-dev_dependencies:
-  flutter_test:
-    sdk: flutter
-  flutter_lints: ^3.0.0
+  # Persistence
+  sqflite: ^2.3.3          # SQLite — user accounts & game data
+  path: ^1.9.0             # DB file path helper (used by sqflite)
+  shared_preferences: ^2.2.2  # Session flags only (is_logged_in, current_user_id)
+
+  # Hardware
+  camera: ^0.11.0+2        # AR camera background
+  pedometer: ^4.0.0        # Real step counting
+  permission_handler: ^11.3.1  # ACTIVITY_RECOGNITION permission
 
 flutter:
   uses-material-design: true
+
   assets:
-    - assets/images/
-    - assets/avatars/
-   
+    - assets/avatars/Oakley.png
+    # Uncomment as you add more avatars:
+    # - assets/avatars/avatar_2.png
+    # - assets/avatars/avatar_3.png
+    # - assets/avatars/avatar_4.png
