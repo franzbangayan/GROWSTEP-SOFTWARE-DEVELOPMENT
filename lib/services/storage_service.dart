@@ -1,52 +1,38 @@
 import 'package:shared_preferences/shared_preferences.dart';
 import '../core/constants/app_constants.dart';
-import '../models/user_model.dart';
 
+/// Session-only storage — just two keys.
+/// All user data lives in SQLite (DatabaseService).
 class StorageService {
   static SharedPreferences? _prefs;
 
-  /// Call once in main.dart before runApp
+  /// Call once in main() before runApp().
   static Future<void> init() async {
     _prefs = await SharedPreferences.getInstance();
   }
 
-  // ─── Auth State ────────────────────────────────────────────
+  // ─── Logged-in flag ────────────────────────────────────────
 
   static Future<void> setLoggedIn(bool value) async {
     await _prefs?.setBool(AppConstants.isLoggedInKey, value);
   }
 
-  static bool isLoggedIn() {
-    return _prefs?.getBool(AppConstants.isLoggedInKey) ?? false;
+  static bool isLoggedIn() =>
+      _prefs?.getBool(AppConstants.isLoggedInKey) ?? false;
+
+  // ─── Current user ID ───────────────────────────────────────
+
+  static Future<void> setCurrentUserId(String id) async {
+    await _prefs?.setString(AppConstants.currentUserIdKey, id);
   }
 
-  // ─── Current User ──────────────────────────────────────────
+  static String? getCurrentUserId() =>
+      _prefs?.getString(AppConstants.currentUserIdKey);
 
-  static Future<void> saveUser(UserModel user) async {
-    await _prefs?.setString(AppConstants.userKey, user.toJson());
-  }
+  // ─── Clear session (logout) ────────────────────────────────
 
-  static UserModel? getUser() {
-    final json = _prefs?.getString(AppConstants.userKey);
-    if (json == null) return null;
-    return UserModel.fromJson(json);
-  }
-
-  static Future<void> clearUser() async {
-    await _prefs?.remove(AppConstants.userKey);
+  static Future<void> clearSession() async {
     await _prefs?.remove(AppConstants.isLoggedInKey);
-  }
-
-  // ─── All Registered Users (local auth) ────────────────────
-
-  static Future<void> saveRegisteredUsers(List<UserModel> users) async {
-    final list = users.map((u) => u.toJson()).toList();
-    await _prefs?.setStringList(AppConstants.registeredUsersKey, list);
-  }
-
-  static List<UserModel> getRegisteredUsers() {
-    final list =
-        _prefs?.getStringList(AppConstants.registeredUsersKey) ?? [];
-    return list.map((json) => UserModel.fromJson(json)).toList();
+    await _prefs?.remove(AppConstants.currentUserIdKey);
   }
 }

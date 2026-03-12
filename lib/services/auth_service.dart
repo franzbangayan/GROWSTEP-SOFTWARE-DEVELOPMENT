@@ -1,61 +1,77 @@
 import '../models/user_model.dart';
+import 'database_service.dart';
 import 'storage_service.dart';
 
 enum AuthResult { success, emailAlreadyExists, invalidCredentials, error }
 
 class AuthService {
-  /// Register a new user locally
+  // In-memory cache — loaded once at startup via restoreSession()
+  static UserModel? _currentUser;
+
+  // ─── Session restore ───────────────────────────────────────
+
+  /// Call in main() after DatabaseService.init() + StorageService.init().
+  /// Loads the previously logged-in user from SQLite into the cache.
+  static Future<void> restoreSession() async {
+    if (!StorageService.isLoggedIn()) return;
+    final id = StorageService.getCurrentUserId();
+    if (id == null) return;
+    _currentUser = await DatabaseService.getUserById(id);
+  }
+
+  // ─── Auth operations ───────────────────────────────────────
+
+  /// Register a new user — writes to SQLite, sets session.
   static Future<AuthResult> register({
     required String name,
     required String email,
     required String password,
+    required String securityQuestion,
+    required String securityAnswer,
   }) async {
     try {
-      final users = StorageService.getRegisteredUsers();
-
-      final exists = users.any(
-        (u) => u.email.toLowerCase() == email.toLowerCase(),
-      );
-      if (exists) return AuthResult.emailAlreadyExists;
+      if (await DatabaseService.emailExists(email)) {
+        return AuthResult.emailAlreadyExists;
+      }
 
       final newUser = UserModel(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         name: name,
         email: email,
         password: password,
+        securityQuestion: securityQuestion,
+        securityAnswer: securityAnswer.toLowerCase().trim(),
       );
 
-      users.add(newUser);
-      await StorageService.saveRegisteredUsers(users);
-      await StorageService.saveUser(newUser);
+      await DatabaseService.upsertUser(newUser);
+      await StorageService.setCurrentUserId(newUser.id);
       await StorageService.setLoggedIn(true);
+      _currentUser = newUser;
 
       return AuthResult.success;
-    } catch (_) {
-      return AuthResult.error;
-    }
+    } catch (e, stackTrace) {
+  print('=== REGISTER ERROR ===');
+  print('Error: $e');
+  print('Stack: $stackTrace');
+  return AuthResult.error;
+}
   }
 
-  /// Login with email and password
+  /// Login — looks up user in SQLite, sets session.
   static Future<AuthResult> login({
     required String email,
     required String password,
   }) async {
     try {
-      final users = StorageService.getRegisteredUsers();
+      final user = await DatabaseService.getUserByEmail(email);
 
-      final user = users.firstWhere(
-        (u) =>
-            u.email.toLowerCase() == email.toLowerCase() &&
-            u.password == password,
-        orElse: () =>
-            UserModel(id: '', name: '', email: '', password: ''),
-      );
+      if (user == null || user.password != password) {
+        return AuthResult.invalidCredentials;
+      }
 
-      if (user.id.isEmpty) return AuthResult.invalidCredentials;
-
-      await StorageService.saveUser(user);
+      await StorageService.setCurrentUserId(user.id);
       await StorageService.setLoggedIn(true);
+      _currentUser = user;
 
       return AuthResult.success;
     } catch (_) {
@@ -63,14 +79,54 @@ class AuthService {
     }
   }
 
-  /// Logout current user
-  static Future<void> logout() async {
-    await StorageService.clearUser();
+  /// Returns the security question for an email, or null if not found.
+  static Future<String?> getSecurityQuestion(String email) async {
+    final user = await DatabaseService.getUserByEmail(email);
+    if (user == null || user.securityQuestion.isEmpty) return null;
+    return user.securityQuestion;
   }
 
-  /// Get current logged-in user
-  static UserModel? get currentUser => StorageService.getUser();
+  /// Reset password after verifying security answer.
+  static Future<AuthResult> resetPassword({
+    required String email,
+    required String securityAnswer,
+    required String newPassword,
+  }) async {
+    try {
+      final user = await DatabaseService.getUserByEmail(email);
+      if (user == null) return AuthResult.invalidCredentials;
 
-  /// Check if user is logged in
-  static bool get isLoggedIn => StorageService.isLoggedIn();
+      if (user.securityAnswer != securityAnswer.toLowerCase().trim()) {
+        return AuthResult.invalidCredentials;
+      }
+
+      final updated = user.copyWith(password: newPassword);
+      await DatabaseService.upsertUser(updated);
+
+      // Update cache if this is the currently logged-in user
+      if (_currentUser?.id == user.id) _currentUser = updated;
+
+      return AuthResult.success;
+    } catch (_) {
+      return AuthResult.error;
+    }
+  }
+
+  /// Upsert user to SQLite and update the in-memory cache.
+  /// Use this everywhere you need to save user changes.
+  static Future<void> saveUser(UserModel user) async {
+    await DatabaseService.upsertUser(user);
+    if (_currentUser?.id == user.id) _currentUser = user;
+  }
+
+  /// Clear session and in-memory cache.
+  static Future<void> logout() async {
+    _currentUser = null;
+    await StorageService.clearSession();
+  }
+
+  // ─── Synchronous getters (read from cache) ─────────────────
+
+  static UserModel? get currentUser => _currentUser;
+  static bool get isLoggedIn => _currentUser != null;
 }

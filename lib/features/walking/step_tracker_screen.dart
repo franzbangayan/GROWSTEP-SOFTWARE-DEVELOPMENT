@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/theme/app_theme.dart';
 import '../../models/quiz_question_model.dart';
-import '../../models/user_model.dart';
 import '../../services/auth_service.dart';
-import '../../services/storage_service.dart';
 import '../quiz/quiz_screen.dart';
 
 class StepTrackerScreen extends StatefulWidget {
@@ -91,8 +89,7 @@ class _StepTrackerScreenState extends State<StepTrackerScreen>
         coins: _coins,
         totalMeters: _totalMeters,
       );
-      await StorageService.saveUser(updated);
-      await _syncToRegisteredUsers(updated);
+      await AuthService.saveUser(updated);
     }
 
     // Check if a new quiz milestone was reached
@@ -129,8 +126,7 @@ class _StepTrackerScreenState extends State<StepTrackerScreen>
       if (user != null) {
         final updated =
             user.copyWith(completedQuizCount: user.completedQuizCount + 1);
-        await StorageService.saveUser(updated);
-        await _syncToRegisteredUsers(updated);
+        await AuthService.saveUser(updated);
       }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -153,15 +149,6 @@ class _StepTrackerScreenState extends State<StepTrackerScreen>
           ),
         );
       }
-    }
-  }
-
-  Future<void> _syncToRegisteredUsers(UserModel updatedUser) async {
-    final users = StorageService.getRegisteredUsers();
-    final index = users.indexWhere((u) => u.id == updatedUser.id);
-    if (index != -1) {
-      users[index] = updatedUser;
-      await StorageService.saveRegisteredUsers(users);
     }
   }
 

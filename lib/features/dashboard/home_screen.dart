@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_constants.dart';
 import '../../models/quiz_question_model.dart';
-import '../../models/user_model.dart';
 import '../../services/auth_service.dart';
-import '../../services/storage_service.dart';
 import '../lessons/lessons_screen.dart';
 import '../profile/profile_screen.dart';
 import '../quiz/quiz_screen.dart';
@@ -12,6 +10,10 @@ import 'package:camera/camera.dart';
 import 'dart:async';
 import 'package:pedometer/pedometer.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:geolocator/geolocator.dart';
+import 'dart:math';
+import 'package:flutter_compass/flutter_compass.dart';
+import '../../models/shop_item_model.dart';
 
 
 class HomeScreen extends StatefulWidget {
@@ -28,6 +30,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   StreamSubscription<StepCount>? _stepCountStream;
   int _stepsAtSessionStart = 0;
   int _sessionSteps = 0;
+
+  // ─── AR Coins ─────────────────────────────────────────────
+  final List<ARCoin> _arCoins = [];
+  Timer? _coinCheckTimer;
+  int _coinIdCounter = 0;
+  Position? _currentPosition;
+  double _compassHeading = 0.0;
+  StreamSubscription<CompassEvent>? _compassStream;
 
   // ─── Walking state ────────────────────────────────────────
   int _totalMeters = 0;
@@ -88,6 +98,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     _loadUser();
     _initCamera();
     _initPedometer();
+    _initLocationAndCoins();
+    _initCompass(); 
   
 
     _bannerController = AnimationController(
@@ -123,6 +135,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     _coinController.dispose();
     _quizButtonController.dispose();
     _cameraController?.dispose();
+    _coinCheckTimer?.cancel();
+    _compassStream?.cancel();
     super.dispose();
   }
 
@@ -147,17 +161,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       totalMeters: _totalMeters,
       completedQuizCount: _completedQuizCount,
     );
-    await StorageService.saveUser(updated);
-    await _syncRegistered(updated);
-  }
-
-  Future<void> _syncRegistered(UserModel user) async {
-    final all = StorageService.getRegisteredUsers();
-    final idx = all.indexWhere((u) => u.id == user.id);
-    if (idx != -1) {
-      all[idx] = user;
-      await StorageService.saveRegisteredUsers(all);
-    }
+    await AuthService.saveUser(updated);
   }
 
   // ─── Walk tap logic ───────────────────────────────────────
@@ -209,7 +213,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   // ─── Quiz launch ──────────────────────────────────────────
 
- Future<void> _initCamera() async {
+  Future<void> _initCamera() async {
     final cameras = await availableCameras();
     _cameraController = CameraController(
       cameras.first,       // back camera
@@ -237,23 +241,124 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     },
     onError: (error) => debugPrint('Pedometer error: $error'),
   );
+  }
+
+  Future<void> _onStepDetected(int addedMeters) async {
+    if (_quizInProgress) return;
+    final prevMeters = _totalMeters;
+    final newMeters = _totalMeters + addedMeters;
+    final prevCoin = prevMeters ~/ AppConstants.metersPerCoin;
+    final newCoin = newMeters ~/ AppConstants.metersPerCoin;
+    if (newCoin > prevCoin) _coinController.forward(from: 0);
+    setState(() {
+      _totalMeters = newMeters;
+      _coins += (newCoin - prevCoin);
+    });
+    await _persistUser();
+    final prevMilestone = prevMeters ~/ AppConstants.quizTriggerMeters;
+    final newMilestone = newMeters ~/ AppConstants.quizTriggerMeters;
+    if (newMilestone > prevMilestone) _triggerMilestone(newMeters);
+  }
+  Future<void> _initLocationAndCoins() async {
+  final status = await Permission.location.request();
+  if (status != PermissionStatus.granted) return;
+
+  _currentPosition = await Geolocator.getCurrentPosition(
+    desiredAccuracy: LocationAccuracy.high,
+  );
+  }
+void _initCompass() {
+  _compassStream = FlutterCompass.events!.listen((CompassEvent event) {
+    if (event.heading != null && mounted) {
+      setState(() => _compassHeading = event.heading!);
+    }
+  });
+
+  _spawnCoinsNearby();
+
+  _coinCheckTimer = Timer.periodic(const Duration(seconds: 5), (_) async {
+    _currentPosition = await Geolocator.getCurrentPosition(
+      desiredAccuracy: LocationAccuracy.high,
+    );
+    _checkCoinProximity();
+  });
+
+}
+void _spawnCoinsNearby() {
+  if (_currentPosition == null) return;
+  final rand = Random();
+  for (int i = 0; i < 5; i++) {
+    final latOffset = (rand.nextDouble() - 0.5) * 0.0001;
+    final lonOffset = (rand.nextDouble() - 0.5) * 0.0001;
+    _arCoins.add(ARCoin(
+      id: _coinIdCounter++,
+      latitude: _currentPosition!.latitude + latOffset,
+      longitude: _currentPosition!.longitude + lonOffset,
+    ));
+  }
+  setState(() {});
 }
 
-Future<void> _onStepDetected(int addedMeters) async {
-  if (_quizInProgress) return;
-  final prevMeters = _totalMeters;
-  final newMeters = _totalMeters + addedMeters;
-  final prevCoin = prevMeters ~/ AppConstants.metersPerCoin;
-  final newCoin = newMeters ~/ AppConstants.metersPerCoin;
-  if (newCoin > prevCoin) _coinController.forward(from: 0);
-  setState(() {
-    _totalMeters = newMeters;
-    _coins += (newCoin - prevCoin);
-  });
-  await _persistUser();
-  final prevMilestone = prevMeters ~/ AppConstants.quizTriggerMeters;
-  final newMilestone = newMeters ~/ AppConstants.quizTriggerMeters;
-  if (newMilestone > prevMilestone) _triggerMilestone(newMeters);
+void _checkCoinProximity() {
+  if (_currentPosition == null) return;
+  bool changed = false;
+
+  for (final coin in _arCoins) {
+    if (coin.collected) continue;
+
+    final distance = Geolocator.distanceBetween(
+      _currentPosition!.latitude,
+      _currentPosition!.longitude,
+      coin.latitude,
+      coin.longitude,
+    );
+
+    if (distance < 15 && !coin.isVisible) {
+      coin.isVisible = true;
+      changed = true;
+    }
+
+    if (distance < 5 && !coin.collected) {
+      coin.collected = true;
+      coin.isVisible = false;
+      _coins += 5;
+      _coinController.forward(from: 0);
+      _persistUser();
+      changed = true;
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Row(children: [
+              Text('🪙', style: TextStyle(fontSize: 18)),
+              SizedBox(width: 8),
+              Text('+5 coins collected!',
+                  style: TextStyle(color: Colors.white)),
+            ]),
+            backgroundColor: const Color(0xFFFFC107),
+            duration: const Duration(seconds: 1),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12)),
+            margin: const EdgeInsets.all(16),
+          ),
+        );
+      }
+    }
+
+    if (distance >= 15 && coin.isVisible) {
+      coin.isVisible = false;
+      changed = true;
+    }
+  }
+
+  if (_arCoins.every((c) => c.collected)) {
+    _arCoins.clear();
+    _spawnCoinsNearby();
+    return;
+  }
+
+  if (changed) setState(() {});
 }
   Future<void> _launchQuiz() async {
     if (_quizInProgress || !mounted) return;
@@ -302,20 +407,28 @@ Future<void> _onStepDetected(int addedMeters) async {
   // ─── Bottom nav ───────────────────────────────────────────
 
   void _onNavTap(int index) {
-    if (index == 0) return; // already home
-    setState(() => _currentNavIndex = index);
+  if (index == 0) return;
+  setState(() => _currentNavIndex = index);
 
-    final screens = [null, const LessonsScreen(), const ShopScreen(), const ProfileScreen()];
+  // ← Persist latest user state before opening any screen
+  _persistUser().then((_) {
+    final screens = [
+      null,
+      const LessonsScreen(),
+      const ShopScreen(),
+      const ProfileScreen(),
+    ];
     Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => screens[index]!),
     ).then((_) {
       if (mounted) {
         setState(() => _currentNavIndex = 0);
-        _loadUser(); // refresh coins/stats on return
+        _loadUser();
       }
     });
-  }
+  });
+}
 
   // ═══════════════════════════════════════════════════════════
   // BUILD
@@ -379,90 +492,73 @@ Future<void> _onStepDetected(int addedMeters) async {
 
   // ─── Background ───────────────────────────────────────────
   // Outdoor nature theme — replace with Image.asset / CameraPreview later
-
-  Widget _buildBackground() {
-  return Container(
-    decoration: BoxDecoration(
-      gradient: LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: [
-          Colors.black.withOpacity(0.28),
-          Colors.transparent,
-          Colors.black.withOpacity(0.20),
-        ],
-        stops: const [0.0, 0.45, 1.0],
-      ),
-    ),
-  );
-}
   // ─── Status Bar ───────────────────────────────────────────
 
-  Widget _buildStatusBar() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 14),
-      child: Row(
-        children: [
-          _statusPill(
-            icon: Icons.trending_up_rounded,
-            iconColor: _green,
-            label: '$_levelTitle (Lvl $_level)',
-          ),
-          const Spacer(),
-          ScaleTransition(
-            scale: _coinAnim,
-            child: _statusPill(
-              icon: Icons.monetization_on_rounded,
-              iconColor: _coinYellow,
-              label: '$_coins',
-            ),
-          ),
-          const SizedBox(width: 8),
-          _statusPill(
-            icon: Icons.bolt_rounded,
-            iconColor: _lightBlue,
-            label: _distanceLabel,
-          ),
-           const SizedBox(width: 8), 
+ Widget _buildStatusBar() {
+  return Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 14),
+    child: Row(
+      children: [
+        _statusPill(
+          icon: Icons.trending_up_rounded,
+          iconColor: _green,
+          label: 'Lvl $_level',
+        ),
+        const SizedBox(width: 6),
         _statusPill(
           icon: Icons.directions_walk_rounded,
           iconColor: Colors.white,
           label: '$_sessionSteps steps',
-        ), 
-        ],
-      ),
-    );
-  }
+        ),
+        const Spacer(),
+        ScaleTransition(
+          scale: _coinAnim,
+          child: _statusPill(
+            icon: Icons.monetization_on_rounded,
+            iconColor: _coinYellow,
+            label: '$_coins',
+          ),
+        ),
+        const SizedBox(width: 6),
+        _statusPill(
+          icon: Icons.bolt_rounded,
+          iconColor: _lightBlue,
+          label: _distanceLabel,
+        ),
+      ],
+    ),
+  );
+}
 
   Widget _statusPill({
-    required IconData icon,
-    required Color iconColor,
-    required String label,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-      decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.58),
-        borderRadius: BorderRadius.circular(22),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: iconColor, size: 15),
-          const SizedBox(width: 5),
-          Text(
-            label,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.2,
-            ),
+  required IconData icon,
+  required Color iconColor,
+  required String label,
+}) {
+  return Container(
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6), // ← was 10, 7
+    decoration: BoxDecoration(
+      color: Colors.black.withOpacity(0.58),
+      borderRadius: BorderRadius.circular(22),
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, color: iconColor, size: 13), // ← was 15
+        const SizedBox(width: 4), // ← was 5
+        Text(
+          label,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 11, // ← was 13
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.2,
           ),
-        ],
-      ),
-    );
-  }
+        ),
+      ],
+    ),
+  );
+}
 
   // ─── Milestone Banner ─────────────────────────────────────
 
@@ -538,6 +634,81 @@ Future<void> _onStepDetected(int addedMeters) async {
               left: 16,
               child: _buildTrophyButton(),
             ),
+            // AR Coins — only show visible ones
+// AR Coins — compass-based, ground level
+// AR Coins — GPS proximity, random screen position
+..._arCoins.where((c) => c.isVisible && !c.collected).map((coin) {
+  if (_currentPosition == null) return const SizedBox.shrink();
+
+  final distance = Geolocator.distanceBetween(
+    _currentPosition!.latitude,
+    _currentPosition!.longitude,
+    coin.latitude,
+    coin.longitude,
+  );
+
+  // Use coin ID to give each coin a stable random position
+  final rand = Random(coin.id);
+  final screenX = constraints.maxWidth * (0.15 + rand.nextDouble() * 0.7);
+  final screenY = constraints.maxHeight * (0.15 + rand.nextDouble() * 0.5);
+  final coinSize = 64.0;
+
+  return Positioned(
+    left: screenX - coinSize / 2,
+    top: screenY - coinSize / 2,
+    child: TweenAnimationBuilder<double>(
+      key: ValueKey(coin.id),
+      tween: Tween(begin: 0.0, end: 1.0),
+      duration: const Duration(milliseconds: 400),
+      builder: (context, value, child) => Transform.scale(
+        scale: value,
+        child: child,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: coinSize,
+            height: coinSize,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: _coinYellow,
+              boxShadow: [
+                BoxShadow(
+                  color: _coinYellow.withOpacity(0.7),
+                  blurRadius: 16,
+                  spreadRadius: 4,
+                ),
+              ],
+            ),
+            child: Center(
+              child: Text(
+                '🪙',
+                style: TextStyle(fontSize: coinSize * 0.5),
+              ),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.55),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              '${distance.toStringAsFixed(0)}m away',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}).toList(),
           ],
         );
       },
@@ -545,50 +716,56 @@ Future<void> _onStepDetected(int addedMeters) async {
   }
 
   Widget _buildCharacter() {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // AR circle frame
-        Container(
-          width: 190,
-          height: 190,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: Colors.black.withOpacity(0.08),
-            border: Border.all(
-              color: Colors.white.withOpacity(0.25),
-              width: 2,
-            ),
-          ),
-          child: ClipOval(
-            child: Image.asset(
-              'assets/avatars/Oakley.png',
-              fit: BoxFit.contain,
-            )
-          ),
-        ),
-        const SizedBox(height: 10),
-        // Level badge below character
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-          decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.55),
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Text(
-            '$_levelTitle · Lvl $_level',
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.5,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
+  // Find equipped item's avatar asset, fall back to default
+  final equippedItem = AuthService.currentUser?.equippedItemId != null
+      ? ShopItemModel.all
+          .where((i) => i.id == AuthService.currentUser!.equippedItemId)
+          .firstOrNull
+      : null;
+  final avatarAsset =
+      equippedItem?.avatarAsset ?? 'assets/avatars/Oakley.png';
 
+  return Column(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Container(
+        width: 100,
+        height: 100,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: Colors.black.withOpacity(0.08),
+          border: Border.all(
+            color: Colors.white.withOpacity(0.25),
+            width: 2,
+          ),
+        ),
+        child: ClipOval(
+          child: Image.asset(
+            avatarAsset, // ← swaps based on equipped item
+            fit: BoxFit.contain,
+          ),
+        ),
+      ),
+      const SizedBox(height: 10),
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.55),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Text(
+          '$_levelTitle · Lvl $_level',
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.5,
+          ),
+        ),
+      ),
+    ],
+  );
+}
   Widget _buildQuizButton() {
     return GestureDetector(
       onTap: _launchQuiz,
@@ -792,4 +969,19 @@ Future<void> _onStepDetected(int addedMeters) async {
       ),
     );
   }
+}
+class ARCoin {
+  final int id;
+  final double latitude;
+  final double longitude;
+  bool isVisible;
+  bool collected;
+
+  ARCoin({
+    required this.id,
+    required this.latitude,
+    required this.longitude,
+    this.isVisible = false,
+    this.collected = false,
+  });
 }

@@ -3,7 +3,6 @@ import '../../core/constants/app_constants.dart';
 import '../../core/theme/app_theme.dart';
 import '../../models/avatar_model.dart';
 import '../../services/auth_service.dart';
-import '../../services/storage_service.dart';
 
 class AvatarSelectionScreen extends StatefulWidget {
   const AvatarSelectionScreen({super.key});
@@ -78,14 +77,7 @@ class _AvatarSelectionScreenState extends State<AvatarSelectionScreen>
         avatarId: avatar.id,
         hasSelectedAvatar: true,
       );
-      await StorageService.saveUser(updatedUser);
-
-      final users = StorageService.getRegisteredUsers();
-      final idx = users.indexWhere((u) => u.id == user.id);
-      if (idx != -1) {
-        users[idx] = updatedUser;
-        await StorageService.saveRegisteredUsers(users);
-      }
+      await AuthService.saveUser(updatedUser);
     }
 
     setState(() => _isLoading = false);
@@ -109,6 +101,7 @@ class _AvatarSelectionScreenState extends State<AvatarSelectionScreen>
         child: SafeArea(
           child: FadeTransition(
             opacity: _fadeAnim,
+            child: SingleChildScrollView(
             child: Column(
               children: [
                 const SizedBox(height: 32),
@@ -119,11 +112,13 @@ class _AvatarSelectionScreenState extends State<AvatarSelectionScreen>
                 _buildAvatarInfo(avatar),
                 const SizedBox(height: 20),
                 _buildStats(avatar),
-                const Spacer(),
+                //const Spacer(),
+                const SizedBox(height: 24),
                 _buildConfirmButton(),
                 const SizedBox(height: 32),
               ],
             ),
+          ),
           ),
         ),
       ),
@@ -193,7 +188,7 @@ class _AvatarSelectionScreenState extends State<AvatarSelectionScreen>
   }
 
   Widget _buildAvatarCard(AvatarModel avatar) {
-    print('Loading image: ${avatar.assetPath}');
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 60),
       child: Container(

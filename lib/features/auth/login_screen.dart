@@ -291,7 +291,7 @@ class _LoginScreenState extends State<LoginScreen>
     return Align(
       alignment: Alignment.centerRight,
       child: TextButton(
-        onPressed: () {},
+        onPressed: () => Navigator.pushNamed(context, AppConstants.forgotPasswordRoute),
         style: TextButton.styleFrom(
           foregroundColor: _white,
           padding: const EdgeInsets.symmetric(vertical: 4),
