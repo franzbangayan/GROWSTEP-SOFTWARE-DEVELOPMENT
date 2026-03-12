@@ -8,9 +8,10 @@ class ShopItemModel {
   final ShopCategory category;
   final int coinCost;
   final IconData icon;
-  final Color imageColor;      // dominant color for the card image area
-  final Color imageTint;       // secondary tint for gradient
+  final Color imageColor;
+  final Color imageTint;
   final int requiredMilestones;
+  final String? avatarAsset; // ← NEW
 
   const ShopItemModel({
     required this.id,
@@ -21,11 +22,10 @@ class ShopItemModel {
     required this.imageColor,
     required this.imageTint,
     this.requiredMilestones = 0,
+    this.avatarAsset, // ← NEW
   });
 
   bool get isQuizLocked => requiredMilestones > 0;
-
-  /// Primary display color — alias for imageColor (used by profile_screen)
   Color get color => imageColor;
 
   static const List<ShopItemModel> all = [
@@ -33,30 +33,33 @@ class ShopItemModel {
     // ─── Clothes ──────────────────────────────────────────
     ShopItemModel(
       id: 'item_dino_hoodie',
-      name: 'DINO HOODIE',
+      name: 'VIOLET JACKET',
       category: ShopCategory.clothes,
       coinCost: 120,
       icon: Icons.checkroom_rounded,
       imageColor: Color(0xFF2E4057),
       imageTint: Color(0xFF1A6B5A),
+      avatarAsset: 'assets/images/Oakley_VioletJacket.png', // ← NEW
     ),
     ShopItemModel(
-      id: 'item_cloud_shoes',
-      name: 'CLOUD SHOES',
+      id: 'BROWN COAT',
+      name: 'BROWN COAT',
       category: ShopCategory.clothes,
       coinCost: 200,
       icon: Icons.directions_run_rounded,
       imageColor: Color(0xFF1C1C2E),
       imageTint: Color(0xFF3A3A5C),
+      avatarAsset: 'assets/images/Oakley_Coat.png',
     ),
     ShopItemModel(
       id: 'item_star_cap',
-      name: 'STAR CAP',
+      name: 'CROWN',
       category: ShopCategory.clothes,
       coinCost: 158,
       icon: Icons.sports_baseball_rounded,
       imageColor: Color(0xFFD4A017),
       imageTint: Color(0xFFE8C547),
+      avatarAsset: 'assets/images/Oakley_Crown.png', // ← NEW
     ),
     ShopItemModel(
       id: 'item_cyber_jacket',
@@ -67,6 +70,7 @@ class ShopItemModel {
       imageColor: Color(0xFF3A3A3A),
       imageTint: Color(0xFF5A5A5A),
       requiredMilestones: 3,
+      avatarAsset: 'assets/avatars/Oakley_Coat.png', // ← NEW
     ),
     ShopItemModel(
       id: 'item_golden_outfit',

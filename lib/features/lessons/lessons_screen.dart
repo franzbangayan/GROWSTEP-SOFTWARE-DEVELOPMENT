@@ -302,7 +302,9 @@ class _LessonsScreenState extends State<LessonsScreen>
                     const Icon(Icons.quiz_rounded,
                         color: Colors.white, size: 18),
                     const SizedBox(width: 8),
-                    Text(
+                    
+                    Flexible(
+                      child: Text(
                       'Practice Quiz — ${category.title}',
                       style: const TextStyle(
                         color: Colors.white,
@@ -310,7 +312,10 @@ class _LessonsScreenState extends State<LessonsScreen>
                         fontWeight: FontWeight.w800,
                         letterSpacing: 0.3,
                       ),
+                       overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
                     ),
+                  ),
                   ],
                 ),
               ),

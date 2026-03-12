@@ -16,8 +16,9 @@ class DatabaseService {
 
     _db = await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: _onCreate,
+      onUpgrade: _onUpgrade,
     );
   }
 
@@ -40,7 +41,13 @@ class DatabaseService {
       )
     ''');
   }
-
+static Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+  if (oldVersion < 2) {
+    await db.execute(
+      'ALTER TABLE users ADD COLUMN equipped_item_id TEXT'
+    );
+  }
+}
   // ─── Write ─────────────────────────────────────────────────
 
   /// Insert or replace a user row (upsert).

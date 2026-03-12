@@ -15,7 +15,6 @@ class _ShopScreenState extends State<ShopScreen>
   UserModel? _user;
   ShopCategory _activeCategory = ShopCategory.clothes;
 
-  // ─── Brand palette ────────────────────────────────────────
   static const Color _bg         = Color(0xFFF7F7F7);
   static const Color _cardBg     = Colors.white;
   static const Color _dark       = Color(0xFF1A1A2E);
@@ -24,18 +23,23 @@ class _ShopScreenState extends State<ShopScreen>
   static const Color _textGrey   = Color(0xFF9E9E9E);
   static const Color _ownedBlue  = Color(0xFF4A90D9);
 
-  @override
-  void initState() {
-    super.initState();
+@override
+void initState() {
+  super.initState();
+  _refreshUser();
+}
+
+void _refreshUser() {
+  setState(() {
     _user = AuthService.currentUser;
-  }
+  });
+}
 
   // ─── Purchase logic ───────────────────────────────────────
 
   Future<void> _purchaseItem(ShopItemModel item) async {
     if (_user == null) return;
     if (_user!.hasItem(item.id)) return;
-
     if (_user!.coins < item.coinCost) {
       _snack('Not enough coins! Need ${item.coinCost}.', isError: true);
       return;
@@ -49,15 +53,44 @@ class _ShopScreenState extends State<ShopScreen>
     if (!confirmed || !mounted) return;
 
     final updatedIds = List<String>.from(_user!.purchasedItemIds)..add(item.id);
+
+    // Auto-equip on purchase if item has an avatar asset
+    final newEquipped = item.avatarAsset != null ? item.id : _user!.equippedItemId;
+
     final updated = _user!.copyWith(
       coins: _user!.coins - item.coinCost,
       purchasedItemIds: updatedIds,
+      equippedItemId: newEquipped,
     );
 
     await AuthService.saveUser(updated);
-
     setState(() => _user = updated);
-    _snack('${item.name} added to your avatar!', isError: false);
+    _snack(
+      item.avatarAsset != null
+          ? '${item.name} purchased & equipped!'
+          : '${item.name} added!',
+      isError: false,
+    );
+  }
+
+  // ─── Equip logic ──────────────────────────────────────────
+
+  Future<void> _equipItem(ShopItemModel item) async {
+    if (_user == null || item.avatarAsset == null) return;
+
+    final alreadyEquipped = _user!.equippedItemId == item.id;
+
+    // Use ..equippedItemId = null to unequip (nullable workaround)
+    final updated = alreadyEquipped
+        ? (_user!.copyWith()..equippedItemId = null)
+        : _user!.copyWith(equippedItemId: item.id);
+
+    await AuthService.saveUser(updated);
+    setState(() => _user = updated);
+    _snack(
+      alreadyEquipped ? '${item.name} unequipped.' : '${item.name} equipped!',
+      isError: false,
+    );
   }
 
   Future<bool> _showConfirmDialog(ShopItemModel item) async {
@@ -72,7 +105,6 @@ class _ShopScreenState extends State<ShopScreen>
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Item image preview
                   Container(
                     width: 90,
                     height: 90,
@@ -84,7 +116,13 @@ class _ShopScreenState extends State<ShopScreen>
                       ),
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: Icon(item.icon, color: Colors.white, size: 46),
+                    child: item.avatarAsset != null
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(20),
+                            child: Image.asset(item.avatarAsset!,
+                                fit: BoxFit.contain),
+                          )
+                        : Icon(item.icon, color: Colors.white, size: 46),
                   ),
                   const SizedBox(height: 16),
                   Text(
@@ -166,10 +204,12 @@ class _ShopScreenState extends State<ShopScreen>
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text(msg,
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+          style: const TextStyle(
+              color: Colors.white, fontWeight: FontWeight.w600)),
       backgroundColor: isError ? const Color(0xFFE53935) : _green,
       behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape:
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       margin: const EdgeInsets.all(16),
       duration: const Duration(seconds: 2),
     ));
@@ -205,10 +245,8 @@ class _ShopScreenState extends State<ShopScreen>
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 4),
       child: Row(
         children: [
-          // Shirt icon box
           Container(
-            width: 42,
-            height: 42,
+            width: 42, height: 42,
             decoration: BoxDecoration(
               color: const Color(0xFFEEEEEE),
               borderRadius: BorderRadius.circular(12),
@@ -217,36 +255,23 @@ class _ShopScreenState extends State<ShopScreen>
                 color: Color(0xFF555555), size: 22),
           ),
           const SizedBox(width: 12),
-          // Title + subtitle
           const Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Avatar Apparel',
-                style: TextStyle(
-                  color: _dark,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              Text(
-                'DRESS FOR SUCCESS',
-                style: TextStyle(
-                  color: _textGrey,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1.5,
-                ),
-              ),
+              Text('Avatar Apparel',
+                  style: TextStyle(
+                      color: _dark, fontSize: 18, fontWeight: FontWeight.w800)),
+              Text('DRESS FOR SUCCESS',
+                  style: TextStyle(
+                      color: _textGrey, fontSize: 10,
+                      fontWeight: FontWeight.w700, letterSpacing: 1.5)),
             ],
           ),
           const Spacer(),
-          // Close button
           GestureDetector(
             onTap: () => Navigator.pop(context),
             child: Container(
-              width: 36,
-              height: 36,
+              width: 36, height: 36,
               decoration: BoxDecoration(
                 color: const Color(0xFFEEEEEE),
                 borderRadius: BorderRadius.circular(10),
@@ -267,30 +292,33 @@ class _ShopScreenState extends State<ShopScreen>
         .where((i) => _user?.hasItem(i.id) ?? false)
         .length;
 
+    // Find equipped item and its avatar asset
+    final equippedItem = _user?.equippedItemId != null
+        ? ShopItemModel.all
+            .where((i) => i.id == _user!.equippedItemId)
+            .firstOrNull
+        : null;
+    final avatarAsset =
+        equippedItem?.avatarAsset ?? 'assets/avatars/Oakley.png';
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Column(
         children: [
-          // Avatar circle
+          // Avatar circle — updates live when equipped
           Stack(
             alignment: Alignment.center,
             children: [
-              // Outer glow ring
               Container(
-                width: 126,
-                height: 126,
+                width: 126, height: 126,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(
-                    color: const Color(0xFFE0E0E0),
-                    width: 2,
-                  ),
+                  border:
+                      Border.all(color: const Color(0xFFE0E0E0), width: 2),
                 ),
               ),
-              // Inner circle with pink bg + character
               Container(
-                width: 118,
-                height: 118,
+                width: 118, height: 118,
                 decoration: const BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
@@ -298,54 +326,51 @@ class _ShopScreenState extends State<ShopScreen>
                     center: Alignment.topCenter,
                     radius: 1.0,
                   ),
-                ),    
-              child: Center(
+                ),
                 child: ClipOval(
-                  child: Image.asset('assets/avatars/Oakley.png', width: 88, height: 88, fit: BoxFit.contain),
-             ),
-           ),
+                  child: Image.asset(
+                    avatarAsset, // ← swaps based on equipped item
+                    width: 88, height: 88,
+                    fit: BoxFit.contain,
+                  ),
+                ),
               ),
             ],
           ),
           const SizedBox(height: 10),
-          // PREVIEW button
+          // Shows what's currently equipped
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 7),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 22, vertical: 7),
             decoration: BoxDecoration(
               color: _dark,
               borderRadius: BorderRadius.circular(20),
             ),
-            child: const Text(
-              'PREVIEW',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 11,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 1.5,
+            child: Text(
+              equippedItem != null
+                  ? 'WEARING: ${equippedItem.name}'
+                  : 'DEFAULT LOOK',
+              style: const TextStyle(
+                color: Colors.white, fontSize: 11,
+                fontWeight: FontWeight.w800, letterSpacing: 1.5,
               ),
             ),
           ),
           const SizedBox(height: 8),
-          // Equipped count
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                width: 8,
-                height: 8,
+                width: 8, height: 8,
                 decoration: const BoxDecoration(
-                  color: _green,
-                  shape: BoxShape.circle,
-                ),
+                    color: _green, shape: BoxShape.circle),
               ),
               const SizedBox(width: 5),
               Text(
-                '$ownedCount EQUIPPED',
+                '$ownedCount OWNED',
                 style: const TextStyle(
-                  color: _green,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.5,
+                  color: _green, fontSize: 11,
+                  fontWeight: FontWeight.w700, letterSpacing: 0.5,
                 ),
               ),
             ],
@@ -355,71 +380,73 @@ class _ShopScreenState extends State<ShopScreen>
     );
   }
 
-  // ─── Category tabs + coin balance ────────────────────────
+  // ─── Category tabs ────────────────────────────────────────
 
-  Widget _buildCategoryTabs() {
-    final tabs = [
-      (ShopCategory.clothes,     'CLOTHES'),
-      (ShopCategory.accessories, 'ACCESSORIES'),
-      (ShopCategory.necessities, 'NECESSITIES'),
-    ];
+ Widget _buildCategoryTabs() {
+  final tabs = [
+    (ShopCategory.clothes,     'CLOTHES'),
+    (ShopCategory.accessories, 'ACCESSORIES'),
+    (ShopCategory.necessities, 'NEEDS'),
+  ];
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Row(
-        children: [
-          // Pill tabs
-          ...tabs.map((t) {
-            final active = _activeCategory == t.$1;
-            return GestureDetector(
-              onTap: () => setState(() => _activeCategory = t.$1),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                margin: const EdgeInsets.only(right: 8),
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 14, vertical: 8),
-                decoration: BoxDecoration(
-                  color: active ? _dark : Colors.transparent,
-                  borderRadius: BorderRadius.circular(22),
-                ),
-                child: Text(
-                  t.$2,
-                  style: TextStyle(
-                    color: active ? Colors.white : _textGrey,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.8,
+  return Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 16),
+    child: Row(
+      children: [
+        // Tabs — scrollable so they never overflow
+        Expanded(
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: tabs.map((t) {
+                final active = _activeCategory == t.$1;
+                return GestureDetector(
+                  onTap: () => setState(() => _activeCategory = t.$1),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    margin: const EdgeInsets.only(right: 8),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: active ? _dark : Colors.transparent,
+                      borderRadius: BorderRadius.circular(22),
+                    ),
+                    child: Text(
+                      t.$2,
+                      style: TextStyle(
+                        color: active ? Colors.white : _textGrey,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.8,
+                      ),
+                    ),
                   ),
-                ),
-              ),
-            );
-          }),
-          const Spacer(),
-          // Coin balance
-          Row(
-            children: [
-              const Text('🪙', style: TextStyle(fontSize: 15)),
-              const SizedBox(width: 4),
-              Text(
-                '${_user?.coins ?? 0}',
-                style: const TextStyle(
-                  color: _dark,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ],
+                );
+              }).toList(),
+            ),
           ),
-        ],
-      ),
-    );
-  }
+        ),
+        // Coin balance — pinned to the right
+        Row(
+          children: [
+            const Text('🪙', style: TextStyle(fontSize: 15)),
+            const SizedBox(width: 4),
+            Text(
+              '${_user?.coins ?? 0}',
+              style: const TextStyle(
+                  color: _dark, fontSize: 15, fontWeight: FontWeight.w800),
+            ),
+          ],
+        ),
+      ],
+    ),
+  );
+}
 
   // ─── Item grid ────────────────────────────────────────────
 
   Widget _buildItemGrid() {
     final items = ShopItemModel.byCategory(_activeCategory);
-
     return GridView.builder(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -434,8 +461,9 @@ class _ShopScreenState extends State<ShopScreen>
   }
 
   Widget _buildItemCard(ShopItemModel item) {
-    final owned    = _user?.hasItem(item.id) ?? false;
-    final locked   = item.isQuizLocked &&
+    final owned     = _user?.hasItem(item.id) ?? false;
+    final equipped  = _user?.equippedItemId == item.id;
+    final locked    = item.isQuizLocked &&
         (_user?.completedQuizCount ?? 0) < item.requiredMilestones;
     final canAfford = (_user?.coins ?? 0) >= item.coinCost;
 
@@ -446,12 +474,16 @@ class _ShopScreenState extends State<ShopScreen>
                 isError: true,
               )
           : owned
-              ? null
+              ? (item.avatarAsset != null ? () => _equipItem(item) : null)
               : () => _purchaseItem(item),
       child: Container(
         decoration: BoxDecoration(
           color: _cardBg,
           borderRadius: BorderRadius.circular(18),
+          // Highlight card if currently equipped
+          border: equipped
+              ? Border.all(color: _ownedBlue, width: 2)
+              : null,
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.07),
@@ -468,7 +500,6 @@ class _ShopScreenState extends State<ShopScreen>
               flex: 10,
               child: Stack(
                 children: [
-                  // Gradient background
                   ClipRRect(
                     borderRadius: const BorderRadius.only(
                       topLeft: Radius.circular(18),
@@ -479,10 +510,7 @@ class _ShopScreenState extends State<ShopScreen>
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: locked
-                              ? [
-                                  const Color(0xFFCCCCCC),
-                                  const Color(0xFFAAAAAA),
-                                ]
+                              ? [const Color(0xFFCCCCCC), const Color(0xFFAAAAAA)]
                               : [item.imageColor, item.imageTint],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
@@ -491,40 +519,44 @@ class _ShopScreenState extends State<ShopScreen>
                       child: locked
                           ? const Center(
                               child: Icon(Icons.lock_rounded,
-                                  color: Colors.white54, size: 36),
-                            )
-                          : Center(
-                              child: Icon(
-                                item.icon,
-                                color: Colors.white.withOpacity(0.9),
-                                size: 56,
-                              ),
-                            ),
+                                  color: Colors.white54, size: 36))
+                          : item.avatarAsset != null
+                              // ← Show actual avatar PNG in card if available
+                              ? Image.asset(item.avatarAsset!,
+                                  fit: BoxFit.contain)
+                              : Center(
+                                  child: Icon(item.icon,
+                                      color: Colors.white.withOpacity(0.9),
+                                      size: 56)),
                     ),
                   ),
-
-                  // Owned checkmark badge
-                  if (owned)
+                  // Equipped badge
+                  if (equipped)
                     Positioned(
-                      top: 8,
-                      right: 8,
+                      top: 8, right: 8,
                       child: Container(
-                        width: 26,
-                        height: 26,
+                        width: 26, height: 26,
                         decoration: const BoxDecoration(
-                          color: _ownedBlue,
-                          shape: BoxShape.circle,
-                        ),
+                            color: _ownedBlue, shape: BoxShape.circle),
+                        child: const Icon(Icons.check_rounded,
+                            color: Colors.white, size: 16),
+                      ),
+                    )
+                  else if (owned)
+                    Positioned(
+                      top: 8, right: 8,
+                      child: Container(
+                        width: 26, height: 26,
+                        decoration: const BoxDecoration(
+                            color: _green, shape: BoxShape.circle),
                         child: const Icon(Icons.check_rounded,
                             color: Colors.white, size: 16),
                       ),
                     ),
-
                   // Lock badge
                   if (locked)
                     Positioned(
-                      top: 8,
-                      right: 8,
+                      top: 8, right: 8,
                       child: Container(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 3),
@@ -535,10 +567,8 @@ class _ShopScreenState extends State<ShopScreen>
                         child: Text(
                           '${item.requiredMilestones} quiz',
                           style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 9,
-                            fontWeight: FontWeight.w700,
-                          ),
+                              color: Colors.white70, fontSize: 9,
+                              fontWeight: FontWeight.w700),
                         ),
                       ),
                     ),
@@ -555,37 +585,60 @@ class _ShopScreenState extends State<ShopScreen>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Item name
                     Text(
                       item.name,
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w800,
-                        color: locked
-                            ? _textGrey
-                            : _dark,
+                        color: locked ? _textGrey : _dark,
                         letterSpacing: 0.3,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-
-                    // Owned OR price+buy
                     if (owned)
-                      const Text(
-                        'OWNED',
-                        style: TextStyle(
-                          color: _green,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.5,
-                        ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            equipped ? 'EQUIPPED' : 'OWNED',
+                            style: TextStyle(
+                              color: equipped ? _ownedBlue : _green,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          if (item.avatarAsset != null)
+                            GestureDetector(
+                              onTap: () => _equipItem(item),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 10, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: equipped
+                                      ? _ownedBlue
+                                      : const Color(0xFFEEEEEE),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Text(
+                                  equipped ? 'ON ✓' : 'EQUIP',
+                                  style: TextStyle(
+                                    color: equipped
+                                        ? Colors.white
+                                        : _textGrey,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
                       )
                     else
                       Row(
                         children: [
-                          const Text('🪙',
-                              style: TextStyle(fontSize: 12)),
+                          const Text('🪙', style: TextStyle(fontSize: 12)),
                           const SizedBox(width: 3),
                           Text(
                             '${item.coinCost}',

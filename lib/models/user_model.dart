@@ -7,7 +7,7 @@ class UserModel {
   final String email;
   final String password;
   final String securityQuestion;
-  final String securityAnswer;     // stored lowercase + trimmed
+  final String securityAnswer;
   int coins;
   int totalMeters;
   int streak;
@@ -15,6 +15,7 @@ class UserModel {
   bool hasSelectedAvatar;
   List<String> purchasedItemIds;
   int completedQuizCount;
+  String? equippedItemId; // ← NEW
 
   UserModel({
     required this.id,
@@ -30,6 +31,7 @@ class UserModel {
     this.hasSelectedAvatar = false,
     List<String>? purchasedItemIds,
     this.completedQuizCount = 0,
+    this.equippedItemId, // ← NEW
   }) : purchasedItemIds = purchasedItemIds ?? [];
 
   // ─── Computed ──────────────────────────────────────────────
@@ -54,6 +56,7 @@ class UserModel {
         'hasSelectedAvatar': hasSelectedAvatar,
         'purchasedItemIds': purchasedItemIds,
         'completedQuizCount': completedQuizCount,
+        'equippedItemId': equippedItemId, // ← NEW
       };
 
   factory UserModel.fromMap(Map<String, dynamic> map) => UserModel(
@@ -70,6 +73,7 @@ class UserModel {
         hasSelectedAvatar: map['hasSelectedAvatar'] ?? false,
         purchasedItemIds: List<String>.from(map['purchasedItemIds'] ?? []),
         completedQuizCount: map['completedQuizCount'] ?? 0,
+        equippedItemId: map['equippedItemId'], // ← NEW
       );
 
   String toJson() => jsonEncode(toMap());
@@ -93,6 +97,7 @@ class UserModel {
         'has_selected_avatar': hasSelectedAvatar ? 1 : 0,
         'purchased_item_ids': jsonEncode(purchasedItemIds),
         'completed_quiz_count': completedQuizCount,
+        'equipped_item_id': equippedItemId, // ← NEW
       };
 
   factory UserModel.fromSqlMap(Map<String, dynamic> row) => UserModel(
@@ -111,8 +116,11 @@ class UserModel {
           jsonDecode(row['purchased_item_ids'] as String? ?? '[]'),
         ),
         completedQuizCount: row['completed_quiz_count'] as int? ?? 0,
+        equippedItemId: row['equipped_item_id'] as String?, // ← NEW
       );
+static const String _unequip = '__unequip__';
 
+UserModel copyWithUnequip() => copyWith()..equippedItemId = null;
   // ─── copyWith ──────────────────────────────────────────────
 
   UserModel copyWith({
@@ -128,6 +136,7 @@ class UserModel {
     bool? hasSelectedAvatar,
     List<String>? purchasedItemIds,
     int? completedQuizCount,
+    String? equippedItemId, // ← NEW
   }) =>
       UserModel(
         id: id,
@@ -141,8 +150,8 @@ class UserModel {
         streak: streak ?? this.streak,
         avatarId: avatarId ?? this.avatarId,
         hasSelectedAvatar: hasSelectedAvatar ?? this.hasSelectedAvatar,
-        purchasedItemIds:
-            purchasedItemIds ?? List.from(this.purchasedItemIds),
+        purchasedItemIds: purchasedItemIds ?? List.from(this.purchasedItemIds),
         completedQuizCount: completedQuizCount ?? this.completedQuizCount,
+        equippedItemId: equippedItemId ?? this.equippedItemId, // ← NEW
       );
 }

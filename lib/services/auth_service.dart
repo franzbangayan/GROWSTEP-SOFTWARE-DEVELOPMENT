@@ -49,9 +49,12 @@ class AuthService {
       _currentUser = newUser;
 
       return AuthResult.success;
-    } catch (_) {
-      return AuthResult.error;
-    }
+    } catch (e, stackTrace) {
+  print('=== REGISTER ERROR ===');
+  print('Error: $e');
+  print('Stack: $stackTrace');
+  return AuthResult.error;
+}
   }
 
   /// Login — looks up user in SQLite, sets session.

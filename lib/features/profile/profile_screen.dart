@@ -317,81 +317,94 @@ class _ProfileScreenState extends State<ProfileScreen>
   // ─── Stats grid ───────────────────────────────────────────
 
   Widget _buildStatsGrid() {
-    final meters = _user?.totalMeters ?? 0;
-    final distanceLabel = meters >= 1000
-        ? '${(meters / 1000).toStringAsFixed(2)} km'
-        : '${meters}m';
+  final meters = _user?.totalMeters ?? 0;
+  final distanceLabel = meters >= 1000
+      ? '${(meters / 1000).toStringAsFixed(2)} km'
+      : '${meters}m';
 
-    final stats = [
-      _Stat('Distance',      distanceLabel,                   Icons.directions_walk_rounded,    _green),
-      _Stat('Coins',         '${_user?.coins ?? 0}',          Icons.monetization_on_rounded,    _yellow),
-      _Stat('Quizzes',       '${_user?.completedQuizCount ?? 0}', Icons.quiz_rounded,           _blue),
-      _Stat('Items Owned',   '${_ownedItems.length}',         Icons.shopping_bag_rounded,       _orange),
-    ];
+  final stats = [
+    _Stat('Distance',    distanceLabel,                       Icons.directions_walk_rounded, _green),
+    _Stat('Coins',       '${_user?.coins ?? 0}',              Icons.monetization_on_rounded, _yellow),
+    _Stat('Quizzes',     '${_user?.completedQuizCount ?? 0}', Icons.quiz_rounded,            _blue),
+    _Stat('Items Owned', '${_ownedItems.length}',             Icons.shopping_bag_rounded,    _orange),
+  ];
 
-    return GridView.count(
-      crossAxisCount: 2,
-      crossAxisSpacing: 12,
-      mainAxisSpacing: 12,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      childAspectRatio: 1.55,
-      children: stats.map(_buildStatCard).toList(),
-    );
-  }
-
-  Widget _buildStatCard(_Stat stat) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-      decoration: BoxDecoration(
-        color: _cardBg,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
+  return Row(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Expanded(
+        child: Column(
+          children: [
+            _buildStatCard(stats[0]),
+            const SizedBox(height: 12),
+            _buildStatCard(stats[2]),
+          ],
+        ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Container(
-            width: 34,
-            height: 34,
-            decoration: BoxDecoration(
-              color: stat.color.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(stat.icon, color: stat.color, size: 18),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                stat.value,
-                style: TextStyle(
-                  color: stat.color,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w900,
-                  height: 1,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                stat.label,
-                style: const TextStyle(
-                    color: _grey, fontSize: 11, fontWeight: FontWeight.w500),
-              ),
-            ],
-          ),
-        ],
+      const SizedBox(width: 12),
+      Expanded(
+        child: Column(
+          children: [
+            _buildStatCard(stats[1]),
+            const SizedBox(height: 12),
+            _buildStatCard(stats[3]),
+          ],
+        ),
       ),
-    );
-  }
+    ],
+  );
+}
 
+ Widget _buildStatCard(_Stat stat) {
+  return Container(
+    padding: const EdgeInsets.all(12),
+    decoration: BoxDecoration(
+      color: _cardBg,
+      borderRadius: BorderRadius.circular(18),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.06),
+          blurRadius: 12,
+          offset: const Offset(0, 4),
+        ),
+      ],
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min, // ← key fix
+      children: [
+        Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            color: stat.color.withOpacity(0.12),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(stat.icon, color: stat.color, size: 16),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          stat.value,
+          style: TextStyle(
+            color: stat.color,
+            fontSize: 18,
+            fontWeight: FontWeight.w900,
+            height: 1,
+          ),
+        ),
+        const SizedBox(height: 3),
+        Text(
+          stat.label,
+          style: const TextStyle(
+            color: _grey,
+            fontSize: 10,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    ),
+  );
+}
   // ─── Progress section ─────────────────────────────────────
 
   Widget _buildProgressSection() {

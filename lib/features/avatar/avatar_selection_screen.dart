@@ -101,6 +101,7 @@ class _AvatarSelectionScreenState extends State<AvatarSelectionScreen>
         child: SafeArea(
           child: FadeTransition(
             opacity: _fadeAnim,
+            child: SingleChildScrollView(
             child: Column(
               children: [
                 const SizedBox(height: 32),
@@ -111,11 +112,13 @@ class _AvatarSelectionScreenState extends State<AvatarSelectionScreen>
                 _buildAvatarInfo(avatar),
                 const SizedBox(height: 20),
                 _buildStats(avatar),
-                const Spacer(),
+                //const Spacer(),
+                const SizedBox(height: 24),
                 _buildConfirmButton(),
                 const SizedBox(height: 32),
               ],
             ),
+          ),
           ),
         ),
       ),
