@@ -13,7 +13,8 @@ class DatabaseService {
 
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, 'growstep.db');
-
+ 
+    
     _db = await openDatabase(
       path,
       version: 2,
@@ -37,7 +38,8 @@ class DatabaseService {
         avatar_id           TEXT,
         has_selected_avatar INTEGER NOT NULL DEFAULT 0,
         purchased_item_ids  TEXT NOT NULL DEFAULT '[]',
-        completed_quiz_count INTEGER NOT NULL DEFAULT 0
+        completed_quiz_count INTEGER NOT NULL DEFAULT 0,
+        equipped_item_id    TEXT
       )
     ''');
   }
