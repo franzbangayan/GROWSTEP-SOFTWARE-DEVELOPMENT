@@ -1,0 +1,403 @@
+import 'package:flutter/material.dart';
+
+enum ShopCategory { clothes, accessories, necessities }
+
+class ShopItemModel {
+  final String id;
+  final String name;
+  final ShopCategory category;
+  final int coinCost;
+  final IconData icon;
+  final Color imageColor;
+  final Color imageTint;
+  final int requiredMilestones;
+  final String? avatarAsset;
+
+  const ShopItemModel({
+    required this.id,
+    required this.name,
+    required this.category,
+    required this.coinCost,
+    required this.icon,
+    required this.imageColor,
+    required this.imageTint,
+    this.requiredMilestones = 0,
+    this.avatarAsset,
+  });
+
+  bool get isQuizLocked => requiredMilestones > 0;
+  Color get color => imageColor;
+
+  static const List<ShopItemModel> all = [
+    // ─── BOUNCY ASSETS ────────────────────────────────────
+    
+    // Clothes
+    ShopItemModel(
+      id: 'bouncy_barong',
+      name: 'BOUNCY BARONG',
+      category: ShopCategory.clothes,
+      coinCost: 250,
+      icon: Icons.checkroom_rounded,
+      imageColor: Color(0xFFE5D3B3),
+      imageTint: Color(0xFFD4C2A1),
+      avatarAsset: 'assets/bouncy/bouncy-barong.png',
+    ),
+    ShopItemModel(
+      id: 'bouncy_brown_jacket',
+      name: 'BOUNCY JACKET',
+      category: ShopCategory.clothes,
+      coinCost: 200,
+      icon: Icons.directions_run_rounded,
+      imageColor: Color(0xFF5D4037),
+      imageTint: Color(0xFF795548),
+      avatarAsset: 'assets/bouncy/bouncy-brown_jacket.png',
+    ),
+    ShopItemModel(
+      id: 'bouncy_hat',
+      name: 'BOUNCY HAT',
+      category: ShopCategory.clothes,
+      coinCost: 120,
+      icon: Icons.architecture, 
+      imageColor: Color(0xFF37474F),
+      imageTint: Color(0xFF455A64),
+      avatarAsset: 'assets/bouncy/bouncy-hat.png',
+    ),
+
+    // Accessories
+    ShopItemModel(
+      id: 'bouncy_crown',
+      name: 'BOUNCY CROWN',
+      category: ShopCategory.accessories,
+      coinCost: 500,
+      icon: Icons.emoji_events_rounded,
+      imageColor: Color(0xFFD4A017),
+      imageTint: Color(0xFFE8C547),
+      requiredMilestones: 5,
+      avatarAsset: 'assets/bouncy/bouncy-crown.png',
+    ),
+    ShopItemModel(
+      id: 'bouncy_cap',
+      name: 'BOUNCY CAP',
+      category: ShopCategory.accessories,
+      coinCost: 80,
+      icon: Icons.sports_baseball_rounded,
+      imageColor: Color(0xFF2E4057),
+      imageTint: Color(0xFF1A6B5A),
+      avatarAsset: 'assets/bouncy/bouncy-cap.png',
+    ),
+    ShopItemModel(
+      id: 'bouncy_shades',
+      name: 'BOUNCY SHADES',
+      category: ShopCategory.accessories,
+      coinCost: 100,
+      icon: Icons.dark_mode_rounded,
+      imageColor: Color(0xFF1A1A1A),
+      imageTint: Color(0xFF333333),
+      avatarAsset: 'assets/bouncy/bouncy-shades.png',
+    ),
+    ShopItemModel(
+      id: 'bouncy_mask',
+      name: 'BOUNCY MASK',
+      category: ShopCategory.accessories,
+      coinCost: 150,
+      icon: Icons.masks_rounded,
+      imageColor: Color(0xFFC62828),
+      imageTint: Color(0xFFEF5350),
+      avatarAsset: 'assets/bouncy/bouncy-mask.png',
+    ),
+
+    // Necessities
+    ShopItemModel(
+      id: 'bouncy_water',
+      name: 'BOUNCY WATER',
+      category: ShopCategory.necessities,
+      coinCost: 50,
+      icon: Icons.water_drop_rounded,
+      imageColor: Color(0xFF0288D1),
+      imageTint: Color(0xFF29B6F6),
+      avatarAsset: 'assets/bouncy/bouncy-water.png',
+    ),
+    ShopItemModel(
+      id: 'bouncy_snack',
+      name: 'BOUNCY SNACK',
+      category: ShopCategory.necessities,
+      coinCost: 40,
+      icon: Icons.fastfood_rounded,
+      imageColor: Color(0xFFFFA000),
+      imageTint: Color(0xFFFFC107),
+      avatarAsset: 'assets/bouncy/bouncy-snack.png',
+    ),
+
+    // ─── GLOWIE ASSETS ────────────────────────────────────
+
+    // Clothes
+    ShopItemModel(
+      id: 'glowie_barong',
+      name: 'GLOWIE BARONG',
+      category: ShopCategory.clothes,
+      coinCost: 250,
+      icon: Icons.checkroom_rounded,
+      imageColor: Color(0xFFA5D6A7),
+      imageTint: Color(0xFF81C784),
+      avatarAsset: 'assets/glowie/glowie-barong.png',
+    ),
+    ShopItemModel(
+      id: 'glowie_brown_jacket',
+      name: 'GLOWIE BROWN JACKET',
+      category: ShopCategory.clothes,
+      coinCost: 200,
+      icon: Icons.directions_run_rounded,
+      imageColor: Color(0xFFBCAAA4),
+      imageTint: Color(0xFFA1887F),
+      avatarAsset: 'assets/glowie/glowie-brown_jacket.png',
+    ),
+    ShopItemModel(
+      id: 'glowie_jacket',
+      name: 'GLOWIE JACKET',
+      category: ShopCategory.clothes,
+      coinCost: 150,
+      icon: Icons.dry_cleaning_rounded,
+      imageColor: Color(0xFFFFF59D),
+      imageTint: Color(0xFFFFF176),
+      avatarAsset: 'assets/glowie/glowie-jacket.png',
+    ),
+    ShopItemModel(
+      id: 'glowie_shoes',
+      name: 'GLOWIE SHOES',
+      category: ShopCategory.clothes,
+      coinCost: 100,
+      icon: Icons.stars_rounded,
+      imageColor: Color(0xFFCE93D8),
+      imageTint: Color(0xFFBA68C8),
+      avatarAsset: 'assets/glowie/glowie_shoes.png',
+    ),
+    ShopItemModel(
+      id: 'glowie_hat',
+      name: 'GLOWIE HAT',
+      category: ShopCategory.clothes,
+      coinCost: 120,
+      icon: Icons.architecture,
+      imageColor: Color(0xFF90A4AE),
+      imageTint: Color(0xFFB0BEC5),
+      avatarAsset: 'assets/glowie/glowie_hat.png',
+    ),
+
+    // Accessories
+    ShopItemModel(
+      id: 'glowie_crown',
+      name: 'GLOWIE CROWN',
+      category: ShopCategory.accessories,
+      coinCost: 500,
+      icon: Icons.blur_on_rounded,
+      imageColor: Color(0xFF9575CD),
+      imageTint: Color(0xFF5E35B1),
+      requiredMilestones: 5,
+      avatarAsset: 'assets/glowie/glowie-crown.png',
+    ),
+    ShopItemModel(
+      id: 'glowie_cap',
+      name: 'GLOWIE CAP',
+      category: ShopCategory.accessories,
+      coinCost: 80,
+      icon: Icons.sports_baseball_rounded,
+      imageColor: Color(0xFF4DB6AC),
+      imageTint: Color(0xFF00897B),
+      avatarAsset: 'assets/glowie/glowie-cap.png',
+    ),
+    ShopItemModel(
+      id: 'glowie_shades',
+      name: 'GLOWIE SHADES',
+      category: ShopCategory.accessories,
+      coinCost: 100,
+      icon: Icons.remove_red_eye_rounded,
+      imageColor: Color(0xFF80CBC4),
+      imageTint: Color(0xFF4DB6AC),
+      avatarAsset: 'assets/glowie/glowie-shades.png',
+    ),
+    ShopItemModel(
+      id: 'glowie_mask',
+      name: 'GLOWIE MASK',
+      category: ShopCategory.accessories,
+      coinCost: 150,
+      icon: Icons.masks_rounded,
+      imageColor: Color(0xFFEF9A9A),
+      imageTint: Color(0xFFE57373),
+      avatarAsset: 'assets/glowie/glowie-mask.png',
+    ),
+
+    // Necessities
+    ShopItemModel(
+      id: 'glowie_water',
+      name: 'GLOW WATER',
+      category: ShopCategory.necessities,
+      coinCost: 50,
+      icon: Icons.water_drop_rounded,
+      imageColor: Color(0xFF81D4FA),
+      imageTint: Color(0xFF4FC3F7),
+      avatarAsset: 'assets/glowie/glowie_water.png',
+    ),
+    ShopItemModel(
+      id: 'glowie_snack',
+      name: 'GLOW SNACK',
+      category: ShopCategory.necessities,
+      coinCost: 40,
+      icon: Icons.fastfood_rounded,
+      imageColor: Color(0xFFFFCC80),
+      imageTint: Color(0xFFFFB74D),
+      avatarAsset: 'assets/glowie/glowie_snack.png',
+    ),
+    // ─── CIRCUIT ASSETS ───────────────────────────────────
+
+    // Clothes
+    ShopItemModel(
+      id: 'circuit_barong',
+      name: 'CIRCUIT BARONG',
+      category: ShopCategory.clothes,
+      coinCost: 250,
+      icon: Icons.checkroom_rounded,
+      imageColor: Color(0xFFB0BEC5),
+      imageTint: Color(0xFF78909C),
+      avatarAsset: 'assets/circuit/circuit-barong.png',
+    ),
+    ShopItemModel(
+      id: 'circuit_brown_jacket',
+      name: 'CIRCUIT JACKET',
+      category: ShopCategory.clothes,
+      coinCost: 200,
+      icon: Icons.directions_run_rounded,
+      imageColor: Color(0xFF8D6E63),
+      imageTint: Color(0xFF6D4C41),
+      avatarAsset: 'assets/circuit/circuit-brown_jacket.png',
+    ),
+    ShopItemModel(
+      id: 'circuit_jacket',
+      name: 'TECH JACKET',
+      category: ShopCategory.clothes,
+      coinCost: 150,
+      icon: Icons.dry_cleaning_rounded,
+      imageColor: Color(0xFF4FC3F7),
+      imageTint: Color(0xFF29B6F6),
+      avatarAsset: 'assets/circuit/circuit-jacket.png',
+    ),
+    ShopItemModel(
+      id: 'circuit_shoes',
+      name: 'TECH SHOES',
+      category: ShopCategory.clothes,
+      coinCost: 100,
+      icon: Icons.stars_rounded,
+      imageColor: Color(0xFF9575CD),
+      imageTint: Color(0xFF7E57C2),
+      avatarAsset: 'assets/circuit/circuit-shoes.png',
+    ),
+    ShopItemModel(
+      id: 'circuit_tophat',
+      name: 'TECH TOPHAT',
+      category: ShopCategory.clothes,
+      coinCost: 180,
+      icon: Icons.architecture,
+      imageColor: Color(0xFF455A64),
+      imageTint: Color(0xFF263238),
+      avatarAsset: 'assets/circuit/circuit-tophat.png',
+    ),
+
+    // Accessories
+    ShopItemModel(
+      id: 'circuit_crown',
+      name: 'CIRCUIT CROWN',
+      category: ShopCategory.accessories,
+      coinCost: 500,
+      icon: Icons.emoji_events_rounded,
+      imageColor: Color(0xFFFFD54F),
+      imageTint: Color(0xFFFBC02D),
+      requiredMilestones: 5,
+      avatarAsset: 'assets/circuit/circuit-crown.png',
+    ),
+    ShopItemModel(
+      id: 'circuit_cap',
+      name: 'CIRCUIT CAP',
+      category: ShopCategory.accessories,
+      coinCost: 80,
+      icon: Icons.sports_baseball_rounded,
+      imageColor: Color(0xFF64B5F6),
+      imageTint: Color(0xFF1E88E5),
+      avatarAsset: 'assets/circuit/circuit-cap.png',
+    ),
+    ShopItemModel(
+      id: 'circuit_shades',
+      name: 'CIRCUIT SHADES',
+      category: ShopCategory.accessories,
+      coinCost: 100,
+      icon: Icons.dark_mode_rounded,
+      imageColor: Color(0xFF37474F),
+      imageTint: Color(0xFF263238),
+      avatarAsset: 'assets/circuit/circuit-shades.png',
+    ),
+    ShopItemModel(
+      id: 'circuit_mask',
+      name: 'CIRCUIT MASK',
+      category: ShopCategory.accessories,
+      coinCost: 150,
+      icon: Icons.masks_rounded,
+      imageColor: Color(0xFFE57373),
+      imageTint: Color(0xFFC62828),
+      avatarAsset: 'assets/circuit/circuit-mask.png',
+    ),
+
+    // Necessities
+    ShopItemModel(
+      id: 'circuit_water',
+      name: 'TECH WATER',
+      category: ShopCategory.necessities,
+      coinCost: 50,
+      icon: Icons.water_drop_rounded,
+      imageColor: Color(0xFF00BCD4),
+      imageTint: Color(0xFF00ACC1),
+      avatarAsset: 'assets/circuit/circuit-water.png',
+    ),
+    ShopItemModel(
+      id: 'circuit_snack',
+      name: 'TECH SNACK',
+      category: ShopCategory.necessities,
+      coinCost: 40,
+      icon: Icons.fastfood_rounded,
+      imageColor: Color(0xFFFF9800),
+      imageTint: Color(0xFFF57C00),
+      avatarAsset: 'assets/circuit/circuit-snack.png',
+    ),
+    
+    // ─── CHARACTER DEFAULTS (Optional) ────────────────────
+    ShopItemModel(
+      id: 'normal_circuit',
+      name: 'CIRCUIT (DEFAULT)',
+      category: ShopCategory.clothes,
+      coinCost: 0,
+      icon: Icons.face_rounded,
+      imageColor: Colors.grey,
+      imageTint: Colors.white,
+      avatarAsset: 'assets/circuit/normal_circuit.png',
+    ),
+    ShopItemModel(
+      id: 'normal_bouncy',
+      name: 'BOUNCY (DEFAULT)',
+      category: ShopCategory.clothes,
+      coinCost: 0,
+      icon: Icons.face_rounded,
+      imageColor: Colors.grey,
+      imageTint: Colors.white,
+      avatarAsset: 'assets/bouncy/normal_bouncy.png',
+    ),
+    ShopItemModel(
+      id: 'normal_glowie',
+      name: 'GLOWIE (DEFAULT)',
+      category: ShopCategory.clothes,
+      coinCost: 0,
+      icon: Icons.face_retouching_natural_rounded,
+      imageColor: Colors.grey,
+      imageTint: Colors.white,
+      avatarAsset: 'assets/glowie/normal_glowie.png',
+    ),
+  ];
+
+  static List<ShopItemModel> byCategory(ShopCategory category) =>
+      all.where((item) => item.category == category).toList();
+}
