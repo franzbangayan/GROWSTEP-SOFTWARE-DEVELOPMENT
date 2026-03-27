@@ -4,6 +4,7 @@ import 'core/theme/app_theme.dart';
 import 'services/auth_service.dart';
 import 'services/database_service.dart';
 import 'services/storage_service.dart';
+import 'services/music_service.dart';
 import 'features/auth/login_screen.dart';
 import 'features/auth/register_screen.dart';
 import 'features/auth/forgot_password_screen.dart';
@@ -29,7 +30,10 @@ void main() async {
   await StorageService.clearSession();
 
   await AuthService.restoreSession();
-
+  
+  // Start background music
+  MusicService.playBackgroundMusic();
+  
   runApp(const MyApp());
 }
 
