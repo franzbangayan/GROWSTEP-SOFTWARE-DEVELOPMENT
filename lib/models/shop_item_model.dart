@@ -29,6 +29,135 @@ class ShopItemModel {
   Color get color => imageColor;
 
   static const List<ShopItemModel> all = [
+    // ─── OAKLEY ASSETS ─────────────────────────────────────
+
+    // Clothes
+    ShopItemModel(
+      id: 'oakley_barong',
+      name: 'OAKLEY BARONG',
+      category: ShopCategory.clothes,
+      coinCost: 250,
+      icon: Icons.checkroom_rounded,
+      imageColor: Color(0xFF8D6E63),
+      imageTint: Color(0xFFA1887F),
+      avatarAsset: 'assets/oakley/oakley_barong.png',
+    ),
+    ShopItemModel(
+      id: 'oakley_brownjacket',
+      name: 'OAKLEY BROWN JACKET',
+      category: ShopCategory.clothes,
+      coinCost: 200,
+      icon: Icons.directions_run_rounded,
+      imageColor: Color(0xFF5D4037),
+      imageTint: Color(0xFF795548),
+      avatarAsset: 'assets/oakley/oakley_brownjacket.png',
+    ),
+    ShopItemModel(
+      id: 'oakley_jacket',
+      name: 'OAKLEY JACKET',
+      category: ShopCategory.clothes,
+      coinCost: 150,
+      icon: Icons.dry_cleaning_rounded,
+      imageColor: Color(0xFF37474F),
+      imageTint: Color(0xFF546E7A),
+      avatarAsset: 'assets/oakley/oakley_jacket.png',
+    ),
+    ShopItemModel(
+      id: 'oakley_shoes',
+      name: 'OAKLEY SHOES',
+      category: ShopCategory.clothes,
+      coinCost: 100,
+      icon: Icons.stars_rounded,
+      imageColor: Color(0xFF4E342E),
+      imageTint: Color(0xFF6D4C41),
+      avatarAsset: 'assets/oakley/oakley_shoes.png',
+    ),
+    ShopItemModel(
+      id: 'oakley_hat',
+      name: 'OAKLEY HAT',
+      category: ShopCategory.clothes,
+      coinCost: 120,
+      icon: Icons.architecture,
+      imageColor: Color(0xFF3E2723),
+      imageTint: Color(0xFF4E342E),
+      avatarAsset: 'assets/oakley/oakley_hat.png',
+    ),
+
+    // Accessories
+    ShopItemModel(
+      id: 'oakley_crown',
+      name: 'OAKLEY CROWN',
+      category: ShopCategory.accessories,
+      coinCost: 500,
+      icon: Icons.emoji_events_rounded,
+      imageColor: Color(0xFFD4A017),
+      imageTint: Color(0xFFE8C547),
+      requiredMilestones: 5,
+      avatarAsset: 'assets/oakley/oakley_crown.png',
+    ),
+    ShopItemModel(
+      id: 'oakley_cap',
+      name: 'OAKLEY CAP',
+      category: ShopCategory.accessories,
+      coinCost: 80,
+      icon: Icons.sports_baseball_rounded,
+      imageColor: Color(0xFF2E7D32),
+      imageTint: Color(0xFF388E3C),
+      avatarAsset: 'assets/oakley/oakley_cap.png',
+    ),
+    ShopItemModel(
+      id: 'oakley_glasses',
+      name: 'OAKLEY GLASSES',
+      category: ShopCategory.accessories,
+      coinCost: 100,
+      icon: Icons.remove_red_eye_rounded,
+      imageColor: Color(0xFF1A1A1A),
+      imageTint: Color(0xFF333333),
+      avatarAsset: 'assets/oakley/oakley_glasses.png',
+    ),
+    ShopItemModel(
+      id: 'oakley_clout',
+      name: 'OAKLEY CLOUT',
+      category: ShopCategory.accessories,
+      coinCost: 130,
+      icon: Icons.dark_mode_rounded,
+      imageColor: Color(0xFF4A148C),
+      imageTint: Color(0xFF6A1B9A),
+      avatarAsset: 'assets/oakley/oakley_clout.png',
+    ),
+    ShopItemModel(
+      id: 'oakley_mask',
+      name: 'OAKLEY MASK',
+      category: ShopCategory.accessories,
+      coinCost: 150,
+      icon: Icons.masks_rounded,
+      imageColor: Color(0xFFC62828),
+      imageTint: Color(0xFFEF5350),
+      avatarAsset: 'assets/oakley/oakley_mask.png',
+    ),
+
+    // Necessities
+    ShopItemModel(
+      id: 'oakley_water',
+      name: 'OAKLEY WATER',
+      category: ShopCategory.necessities,
+      coinCost: 50,
+      icon: Icons.water_drop_rounded,
+      imageColor: Color(0xFF0288D1),
+      imageTint: Color(0xFF29B6F6),
+      avatarAsset: 'assets/oakley/oakley_water.png',
+    ),
+    ShopItemModel(
+      id: 'oakley_snack',
+      name: 'OAKLEY SNACK',
+      category: ShopCategory.necessities,
+      coinCost: 40,
+      icon: Icons.fastfood_rounded,
+      imageColor: Color(0xFFFFA000),
+      imageTint: Color(0xFFFFC107),
+      avatarAsset: 'assets/oakley/oakley_snack.png',
+    ),
+
     // ─── BOUNCY ASSETS ────────────────────────────────────
     
     // Clothes
@@ -366,6 +495,16 @@ class ShopItemModel {
     ),
     
     // ─── CHARACTER DEFAULTS (Optional) ────────────────────
+    ShopItemModel(
+      id: 'normal_oakley',
+      name: 'OAKLEY (DEFAULT)',
+      category: ShopCategory.clothes,
+      coinCost: 0,
+      icon: Icons.face_rounded,
+      imageColor: Colors.grey,
+      imageTint: Colors.white,
+      avatarAsset: 'assets/oakley/normal_oakley.png',
+    ),
     ShopItemModel(
       id: 'normal_circuit',
       name: 'CIRCUIT (DEFAULT)',

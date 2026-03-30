@@ -49,6 +49,19 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   AvatarModel? get _selectedAvatar {
+    // 1. Check if the user's variant belongs to a specific avatar
+    //    (this keeps the label in sync with the actual displayed image)
+    if (_user?.avatarVariantId != null) {
+      for (var avatar in AvatarModel.defaults) {
+        for (var variant in avatar.variants) {
+          if (variant.id == _user!.avatarVariantId) {
+            return avatar;
+          }
+        }
+      }
+    }
+
+    // 2. Fall back to the avatarId
     if (_user?.avatarId == null) return null;
     try {
       return AvatarModel.defaults.firstWhere((a) => a.id == _user!.avatarId);
